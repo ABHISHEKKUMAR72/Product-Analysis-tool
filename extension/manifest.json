@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "PriceHawk — Compare Prices Instantly",
+  "description": "Compare prices across Amazon, Flipkart, Myntra, Meesho & more — instantly, on any product page.",
+  "version": "1.0.0",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "PriceHawk – Compare Prices"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://www.amazon.in/*",
+        "*://www.amazon.com/*",
+        "*://www.flipkart.com/*",
+        "*://www.myntra.com/*",
+        "*://www.meesho.com/*",
+        "*://www.ajio.com/*",
+        "*://www.nykaa.com/*",
+        "*://www.tatacliq.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://localhost:5000/*",
+    "https://localhost:5000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

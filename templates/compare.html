@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Head-to-Head Compare</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <nav class="bg-gradient-to-r from-blue-600 to-indigo-700 p-4 text-white shadow mb-10">
+    <div class="container mx-auto flex gap-4 items-center">
+      <h1 class="font-bold text-2xl">⚖️ Head-to-Head Compare</h1>
+      <a href="/products" class="ml-auto hover:underline">Back to Products</a>
+    </div>
+  </nav>
+
+  <div class="container mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {% for item in items %}
+      <div class="bg-white rounded-xl shadow-lg border {% if loop.index == 1 %}border-blue-500 border-4 transform scale-105 z-10{% else %}border-gray-200{% endif %} overflow-hidden flex flex-col">
+        {% if loop.index == 1 %}
+        <div class="bg-blue-500 text-white text-center font-bold py-2 uppercase text-sm tracking-widest">Target Product</div>
+        {% else %}
+        <div class="bg-gray-200 text-gray-700 text-center font-bold py-2 text-xs uppercase">Competitor</div>
+        {% endif %}
+        
+        <div class="p-6 flex-1 flex flex-col">
+          <h2 class="text-xl font-bold mb-4 line-clamp-3">{{ item.Title }}</h2>
+          <div class="space-y-4 mb-6">
+            <div class="flex justify-between items-center pb-2 border-b">
+              <span class="text-gray-500 text-sm">Price</span>
+              <span class="text-2xl font-black text-green-600">₹{{ item.Price }}</span>
+            </div>
+            <div class="flex justify-between items-center pb-2 border-b">
+              <span class="text-gray-500 text-sm">Store</span>
+              <span class="font-semibold text-gray-800">{{ item.Source }}</span>
+            </div>
+            <div class="flex justify-between items-center pb-2 border-b">
+              <span class="text-gray-500 text-sm">Rating</span>
+              <span class="font-bold text-yellow-500">⭐ {{ item.Rating if item.Rating else 'N/A' }}</span>
+            </div>
+          </div>
+          <div class="mt-auto">
+            <a href="{{ item.Link }}" target="_blank" class="block w-full py-3 bg-gray-900 text-white font-bold rounded-lg hover:bg-black transition text-center shadow">Buy Now</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</body>
+</html>

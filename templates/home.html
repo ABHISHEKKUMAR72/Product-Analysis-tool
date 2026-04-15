@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Product Analysis Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    function setSearch(val) { document.getElementById('query').value = val; }
+
+    // Show loading message when form submitted
+    function showLoadingMessage() {
+      document.getElementById("loadingMessage").classList.remove("hidden");
+    }
+  </script>
+</head>
+
+<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col justify-between">
+
+  <!-- Navbar -->
+  <nav class="bg-gradient-to-r from-blue-600 to-indigo-700 p-4 text-white shadow">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="font-bold text-2xl">🛒 Product Analysis Tool</h1>
+      <div class="flex gap-6">
+        <a href="/" class="hover:underline">Home</a>
+        <a href="/products" class="hover:underline">Products</a>
+        <a href="/visuals" class="hover:underline">Visuals Analysis</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="relative text-white py-24 text-center shadow-lg bg-black overflow-hidden">
+    <div class="absolute inset-0 z-0">
+      <img src="{{ url_for('static', filename='images/hero.png') }}" class="w-full h-full object-cover opacity-60 mix-blend-overlay" alt="Shopping Banner" />
+    </div>
+    <div class="relative z-10">
+      <h2 class="text-5xl font-extrabold mb-4 drop-shadow-xl tracking-tight">✨ Shop Smarter, Compare Faster 🚀</h2>
+      <p class="text-xl mb-6 drop-shadow-md max-w-2xl mx-auto font-medium">Instantly compare prices, sentiment, and AI value ratings across the biggest eCommerce giants.</p>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="container mx-auto mt-10 flex-1">
+    {% if message %}
+    <p class="text-red-600 text-center mb-4">{{ message }}</p>
+    {% endif %}
+
+    <!-- Search Box -->
+    <form method="POST" onsubmit="showLoadingMessage()" class="bg-white shadow-xl p-6 rounded-lg max-w-2xl mx-auto">
+      <input id="query" name="query" placeholder="Search any products..." required
+        class="w-full border p-3 rounded mb-4 focus:ring-2 focus:ring-blue-400" />
+
+      <!-- Recommendation Search Label -->
+      <div class="text-center mb-2">
+        <span
+          class="font-bold text-xl bg-gradient-to-r from-blue-600 to-indigo-700 bg-clip-text text-transparent drop-shadow">
+          Recommendation search
+        </span>
+      </div>
+
+      <!-- Recommended Buttons -->
+      <div class="flex flex-wrap gap-2 mb-6 justify-center">
+        {% for word in ["Cloths","Shoes","Beauty Products","Smartphones","Laptops"] %}
+        <button type="button" onclick="setSearch('{{word}}')"
+          class="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-4 py-2 rounded-full shadow hover:scale-105 transition">
+          {{word}}
+        </button>
+        {% endfor %}
+      </div>
+
+
+
+      <!-- Checkbox Instruction -->
+      <div class="text-center text-blue-700 font-semibold mb-2">Select Marketplaces to Search:</div>
+
+      <!-- Checkboxes -->
+      <div class="flex flex-wrap gap-4 justify-center mb-6">
+        <label class="cursor-pointer font-medium hover:text-orange-500 transition"><input type="checkbox" name="amazon" class="mr-1" checked> Amazon</label>
+        <label class="cursor-pointer font-medium hover:text-pink-500 transition"><input type="checkbox" name="myntra" class="mr-1" checked> Myntra</label>
+        <label class="cursor-pointer font-medium hover:text-blue-500 transition"><input type="checkbox" name="flipkart" class="mr-1" checked> Flipkart</label>
+        <label class="cursor-pointer font-medium hover:text-teal-600 transition"><input type="checkbox" name="ajio" class="mr-1" checked> Ajio</label>
+        <label class="cursor-pointer font-medium hover:text-fuchsia-500 transition"><input type="checkbox" name="nykaa" class="mr-1" checked> Nykaa</label>
+        <label class="cursor-pointer font-medium hover:text-slate-600 transition"><input type="checkbox" name="tatacliq" class="mr-1" checked> TataCLiQ</label>
+        <label class="cursor-pointer font-medium hover:text-purple-500 transition"><input type="checkbox" name="meesho" class="mr-1" checked> Meesho</label>
+      </div>
+
+      <button type="submit"
+        class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-3 rounded-lg hover:scale-105 transition">
+        🚀 Search & Analyze
+      </button>
+
+      <!-- Loading Message -->
+      <p id="loadingMessage" class="hidden text-center mt-4 text-yellow-600 font-medium">
+        ⏳ Please wait 10–30 seconds while we fetch live product data...
+      </p>
+    </form>
+
+    {% if session.get('searches') %}
+    <div class="mt-8 mb-6 relative w-full max-w-2xl mx-auto flex flex-col items-center">
+      <div class="flex items-center justify-center gap-4 mb-3">
+        <h3 class="text-sm font-bold text-gray-600 uppercase tracking-widest">Your Recent Searches</h3>
+        <form method="POST" action="/clear_history">
+          <button type="submit" class="text-xs bg-red-100 hover:bg-red-200 text-red-600 font-bold py-1 px-2 rounded-full shadow border border-red-200 transition">Clear 🗑️</button>
+        </form>
+      </div>
+      <div class="flex flex-wrap gap-2 justify-center">
+        {% for search_term in session.get('searches') %}
+        <button type="button" onclick="setSearch('{{search_term}}')"
+          class="bg-indigo-50 border border-indigo-100 text-indigo-700 font-medium px-3 py-1 rounded-full shadow-sm hover:bg-indigo-100 text-sm transition">
+          🕒 {{ search_term }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Info Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+      <div class="bg-white shadow-lg p-6 rounded-lg text-center hover:shadow-2xl transition">
+        <h3 class="text-xl font-bold mb-2">🔍 Unified Search</h3>
+        <p class="text-gray-600">Search once and fetch products from multiple platforms in real time.</p>
+      </div>
+      <div class="bg-white shadow-lg p-6 rounded-lg text-center hover:shadow-2xl transition">
+        <h3 class="text-xl font-bold mb-2">📈 Smart Comparisons</h3>
+        <p class="text-gray-600">Easily compare prices and ratings side-by-side to find the best deals.</p>
+      </div>
+      <div class="bg-white shadow-lg p-6 rounded-lg text-center hover:shadow-2xl transition">
+        <h3 class="text-xl font-bold mb-2">⚡ Automated Insights</h3>
+        <p class="text-gray-600">Save time with auto-generated highlights and quick decision support.</p>
+      </div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="flex justify-center gap-6 mt-12">
+      <a href="/products" class="bg-green-500 hover:bg-green-700 text-white px-6 py-3 rounded-lg shadow">📦 View
+        Products</a>
+      <a href="/visuals" class="bg-purple-500 hover:bg-purple-700 text-white px-6 py-3 rounded-lg shadow">📊 Visuals
+        Analysis</a>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-white text-center py-4 mt-12">
+    © 2026 Product Analysis Tool. Built with ❤️ for smarter shopping.
+  </footer>
+</body>
+
+</html>
