@@ -26,6 +26,14 @@ const SOURCE_ICONS = {
 
 let _allResults = [];
 let _activeFilter = "All";
+let _searchHistory = [];
+
+// Load history on startup
+chrome.storage.local.get(['searchHistory'], (result) => {
+  if (result.searchHistory) {
+    _searchHistory = result.searchHistory;
+  }
+});
 
 // ─── DOM refs ────────────────────────────────────────────────────────────────
 const $searchInput    = document.getElementById("searchInput");
@@ -71,7 +79,7 @@ function truncate(str, n) {
 // ─── Server health check ─────────────────────────────────────────────────────
 async function checkServer() {
   try {
-    const r = await fetch(`${API_BASE}/api/status`, { signal: AbortSignal.timeout(3000) });
+    const r = await fetch(`${API_BASE}/api/status`, { signal: AbortSignal.timeout(2000) });
     if (r.ok) {
       $serverStatus.classList.add("online");
       $statusText.textContent = "Server online";
@@ -98,121 +106,136 @@ function renderResults(results, query, fromCache) {
     $bestTitle.textContent  = truncate(best.title, 60);
     $bestPrice.textContent  = formatPrice(best.price);
     $bestLink.href          = best.link;
+    
+    // Update history with the best price
+    addToHistory(query, best.price);
+  } else {
+    $bestDeal.style.display = "none";
   }
 
   // Stats
-  const prices = priced.map(r => r.price);
-  const sites  = [...new Set(results.map(r => r.source))];
-  $statCount.textContent    = results.length;
-  $statSites.textContent    = sites.length;
-  $statCheapest.textContent = prices.length ? "₹" + Math.min(...prices).toLocaleString("en-IN") : "—";
-  $statHighest.textContent  = prices.length ? "₹" + Math.max(...prices).toLocaleString("en-IN") : "—";
+  const sources = [...new Set(results.map(r => r.source))];
+  $statCount.textContent = results.length;
+  $statSites.textContent = sources.length;
+  if (priced.length) {
+    $statCheapest.textContent = "₹" + Math.min(...priced.map(p => p.price)).toLocaleString();
+    $statHighest.textContent  = "₹" + Math.max(...priced.map(p => p.price)).toLocaleString();
+  }
 
   // Filter tabs
   $filterTabs.innerHTML = "";
-  ["All", ...sites].forEach(site => {
-    const tab = document.createElement("button");
-    tab.className = "filter-tab" + (site === _activeFilter ? " active" : "");
-    tab.textContent = site;
-    if (SOURCE_COLORS[site]) tab.style.setProperty("--tab-color", SOURCE_COLORS[site]);
-    tab.addEventListener("click", () => {
-      _activeFilter = site;
-      document.querySelectorAll(".filter-tab").forEach(t => t.classList.remove("active"));
-      tab.classList.add("active");
-      renderCards();
-    });
-    $filterTabs.appendChild(tab);
+  ["All", ...sources].forEach(s => {
+    const btn = document.createElement("button");
+    btn.className = "filter-tab" + (s === _activeFilter ? " active" : "");
+    btn.textContent = s;
+    btn.onclick = () => {
+      _activeFilter = s;
+      renderList();
+      [...$filterTabs.children].forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
+    };
+    $filterTabs.appendChild(btn);
   });
 
-  renderCards();
-  $resultsFooter.textContent = fromCache
-    ? `⚡ Cached results • ${results.length} products across ${sites.length} sites`
-    : `🔍 Live results • ${results.length} products across ${sites.length} sites`;
-
+  renderList();
   showState("results");
+  
+  $resultsFooter.textContent = fromCache ? "⚡ Loaded from cache" : `Found ${results.length} products`;
 }
 
-function renderCards() {
-  const filtered = _activeFilter === "All"
-    ? _allResults
+function renderList() {
+  const filtered = _activeFilter === "All" 
+    ? _allResults 
     : _allResults.filter(r => r.source === _activeFilter);
 
-  $productList.innerHTML = "";
-  filtered.forEach((item, i) => {
-    const card = document.createElement("div");
-    card.className = "product-card";
-    card.style.animationDelay = `${i * 30}ms`;
-
-    const color = SOURCE_COLORS[item.source] || "#6C63FF";
-    const icon  = SOURCE_ICONS[item.source]  || "🛒";
-    const priceStr = item.price ? formatPrice(item.price) : (item.price_raw || "—");
-
-    card.innerHTML = `
-      <div class="card-source" style="color:${color}">
-        <span>${icon}</span>
-        <span>${item.source}</span>
+  $productList.innerHTML = filtered.map(r => `
+    <div class="product-card">
+      <div class="pc-source" style="color: ${SOURCE_COLORS[r.source]}">
+        ${SOURCE_ICONS[r.source] || "🛒"} ${r.source}
       </div>
-      <div class="card-title">${truncate(item.title || "—", 72)}</div>
-      <div class="card-footer">
-        <span class="card-price">${priceStr}</span>
-        <a class="card-link" href="${item.link}" target="_blank" rel="noopener">View →</a>
+      <div class="pc-content">
+        <div class="pc-title" title="${r.title}">${truncate(r.title, 65)}</div>
+        <div class="pc-row">
+          <div class="pc-price">${formatPrice(r.price)}</div>
+          ${r.rating ? `<div class="pc-rating">⭐ ${r.rating}</div>` : ''}
+          <div class="pc-actions">
+            <button class="pc-hist-btn" onclick="showPriceHistory('${r.title.replace(/'/g, "\\'")}')" title="Price Trend">📈</button>
+            <a href="${r.link}" target="_blank" class="pc-link">Buy</a>
+          </div>
+        </div>
       </div>
-    `;
-    $productList.appendChild(card);
-  });
+    </div>
+  `).join("");
+}
 
-  if (!filtered.length) {
-    $productList.innerHTML = `<p class="no-filter">No results from ${_activeFilter}.</p>`;
+async function showPriceHistory(title) {
+  try {
+    const resp = await fetch(`${API_BASE}/api/price-history?title=${encodeURIComponent(title)}`);
+    const data = await resp.json();
+    const history = data.history || [];
+    
+    if (history.length < 2) {
+      alert("Not enough history data for this product yet.");
+      return;
+    }
+    
+    const last = history[history.length - 1].Price;
+    const prev = history[history.length - 2].Price;
+    const diff = last - prev;
+    const status = diff < 0 ? "📉 Price Dropped!" : (diff > 0 ? "📈 Price Increased" : "⚖️ Price Stable");
+    
+    alert(`Price Trend for: ${title}\n\n${status}\nLatest: ₹${last}\nPrevious: ₹${prev}`);
+  } catch (err) {
+    alert("Could not load history.");
   }
 }
 
-// ─── Main search ──────────────────────────────────────────────────────────────
-async function doSearch(query) {
-  if (!query.trim()) return;
-  _activeFilter = "All";
-  showState("loading");
-  $bestDeal.style.display = "none";
+function addToHistory(query, price) {
+  const timestamp = Date.now();
+  const entry = { query, price, timestamp };
+  
+  // Keep last 10 unique searches
+  _searchHistory = _searchHistory.filter(h => h.query.toLowerCase() !== query.toLowerCase());
+  _searchHistory.unshift(entry);
+  _searchHistory = _searchHistory.slice(0, 10);
+  
+  chrome.storage.local.set({ searchHistory: _searchHistory });
+}
 
-  const online = await checkServer();
-  if (!online) { showState("error"); return; }
+// ─── Search action ───────────────────────────────────────────────────────────
+async function performSearch(q) {
+  if (!q || q.length < 3) return;
+  showState("loading");
+  
+  const isOnline = await checkServer();
+  if (!isOnline) { showState("error"); return; }
 
   try {
-    const url = new URL(`${API_BASE}/api/search`);
-    url.searchParams.append("q", query);
-
-    // Backend may take 30-90 seconds due to Playwright & Selenium
-    const r = await fetch(url, { signal: AbortSignal.timeout(120000) });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
-    if (data.error) throw new Error(data.error);
-    renderResults(data.results || [], query, data.from_cache);
+    const url = `${API_BASE}/api/search?q=${encodeURIComponent(q)}&amazon=true&flipkart=true&myntra=true&ajio=true`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error("Search failed");
+    
+    const data = await resp.json();
+    renderResults(data.results || [], q, data.from_cache);
   } catch (err) {
-    console.error("[PriceHawk]", err);
+    console.error(err);
     showState("error");
   }
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
-document.addEventListener("DOMContentLoaded", async () => {
-  // Check server health
-  checkServer();
+// ─── Events ──────────────────────────────────────────────────────────────────
+$searchBtn.onclick = () => performSearch($searchInput.value.trim());
+$searchInput.onkeydown = (e) => { if (e.key === "Enter") performSearch($searchInput.value.trim()); };
+$retryBtn.onclick = () => performSearch($searchInput.value.trim());
 
-  // Try to read product title from current tab via content.js
-  chrome.storage.session.get(["productTitle"], (data) => {
-    if (data.productTitle) {
-      $searchInput.value = data.productTitle;
-      $detectedLabel.textContent = `📄 Detected: ${truncate(data.productTitle, 50)}`;
-      // Auto-search when on a product page
-      doSearch(data.productTitle);
-    }
-  });
-
-  // Search button
-  $searchBtn.addEventListener("click", () => doSearch($searchInput.value));
-  $searchInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") doSearch($searchInput.value);
-  });
-
-  // Retry button
-  $retryBtn.addEventListener("click", () => doSearch($searchInput.value));
+// Auto-detect from storage
+chrome.storage.session.get(["detectedProduct"], (res) => {
+  if (res.detectedProduct) {
+    $searchInput.value = res.detectedProduct;
+    $detectedLabel.textContent = "Detected: " + truncate(res.detectedProduct, 40);
+    performSearch(res.detectedProduct);
+  }
 });
+
+// Initial health check
+checkServer();

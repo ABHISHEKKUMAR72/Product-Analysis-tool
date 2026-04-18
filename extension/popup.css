@@ -351,20 +351,47 @@ body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
   justify-content: space-between;
 }
 
-.card-price {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
+.pc-price { font-size: 14px; font-weight: 700; color: var(--text); }
+.pc-rating { font-size: 11px; color: #fbbf24; font-weight: 600; margin-left: 8px; }
+
+.pc-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
-.card-link {
-  color: var(--accent2);
-  text-decoration: none;
+.pc-hist-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
-  font-weight: 500;
-  transition: color 0.15s;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.card-link:hover { color: white; }
+.pc-hist-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.pc-link {
+  background: var(--accent);
+  color: white;
+  text-decoration: none;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.pc-link:hover { background: var(--accent2); }
 
 .no-filter {
   color: var(--text-muted);

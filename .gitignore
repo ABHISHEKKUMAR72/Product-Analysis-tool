@@ -1,1 +1,19 @@
+# Node
+node_modules/
+dist/
+dist-ssr
+*.local
+frontend/node_modules/
+frontend/dist/
+
+# Python
+.venv/
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.db
+ecommerce.db
+products.db
+scraped_data.csv

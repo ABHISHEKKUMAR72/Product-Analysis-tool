@@ -153,3 +153,227 @@ def add_similar_products(df):
             
     df['SimilarProducts'] = similar_list
     return df
+
+
+# import pandas as pd
+# import numpy as np
+
+# def get_similar_products_knn(df, target_row, n_neighbors=3):
+#     """Find similar products using price and rating"""
+#     try:
+#         # Ensure numeric values
+#         df_valid = df.copy()
+#         df_valid['Price'] = pd.to_numeric(df_valid['Price'], errors='coerce')
+#         df_valid['Rating'] = pd.to_numeric(df_valid['Rating'], errors='coerce').fillna(0)
+        
+#         # Remove rows with NaN prices
+#         df_valid = df_valid.dropna(subset=['Price'])
+        
+#         if len(df_valid) < 2:
+#             return []
+        
+#         # Calculate price similarity
+#         target_price = target_row['Price']
+#         target_rating = target_row.get('Rating', 0)
+#         if pd.isna(target_rating):
+#             target_rating = 0
+        
+#         # Find similar products by price range (±30%)
+#         price_range = target_price * 0.3
+#         similar_mask = (df_valid['Price'] >= target_price - price_range) & \
+#                        (df_valid['Price'] <= target_price + price_range) & \
+#                        (df_valid['Title'] != target_row['Title'])
+        
+#         similar_products = df_valid[similar_mask].head(n_neighbors)
+        
+#         results = []
+#         for _, row in similar_products.iterrows():
+#             results.append(row.to_dict())
+        
+#         return results
+#     except Exception as e:
+#         print(f"KNN Error: {e}")
+#         return []
+
+# def add_better_alternatives(df):
+#     """Find better alternatives (cheaper with similar rating)"""
+#     if df is None or df.empty:
+#         return df
+    
+#     df = df.copy()
+#     df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
+#     df['Rating'] = pd.to_numeric(df['Rating'], errors='coerce').fillna(0)
+#     df = df.dropna(subset=['Price'])
+    
+#     alternatives = []
+    
+#     for _, row in df.iterrows():
+#         target_price = row['Price']
+#         target_rating = row['Rating']
+        
+#         # Find cheaper products with similar or better rating
+#         better_mask = (df['Price'] < target_price) & \
+#                      (df['Rating'] >= target_rating - 0.5) & \
+#                      (df['Title'] != row['Title'])
+        
+#         better_options = df[better_mask]
+        
+#         if not better_options.empty:
+#             best = better_options.nsmallest(1, 'Price').iloc[0]
+#             savings = target_price - best['Price']
+            
+#             alternatives.append({
+#                 "title": best['Title'],
+#                 "price": best['Price'],
+#                 "rating": best['Rating'],
+#                 "source": best['Source'],
+#                 "link": best['Link'],
+#                 "savings": int(savings)
+#             })
+#         else:
+#             alternatives.append(None)
+    
+#     df['BetterAlternative'] = alternatives
+#     return df
+
+# def get_top_recommendations(df):
+#     """Get top 3 recommendations"""
+#     if df is None or df.empty:
+#         return []
+    
+#     df = df.copy()
+#     df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
+#     df['Rating'] = pd.to_numeric(df['Rating'], errors='coerce').fillna(0)
+#     df = df.dropna(subset=['Price'])
+    
+#     # Calculate value score (higher rating / lower price)
+#     df['ValueScore'] = (df['Rating'] / (df['Price'] / 1000)) * 10
+    
+#     # Sort by value score and get top 3
+#     top_picks = df.nlargest(3, 'ValueScore')
+    
+#     return top_picks.to_dict(orient='records')
+
+# def add_similar_products(df):
+#     """Add similar products column"""
+#     if df is None or df.empty:
+#         return df
+    
+#     df = df.copy()
+#     similar_list = []
+    
+#     for _, row in df.iterrows():
+#         similar = get_similar_products_knn(df, row, n_neighbors=3)
+#         similar_list.append(similar)
+    
+#     df['SimilarProducts'] = similar_list
+#     return df
+
+# components/recommendation_engine.py
+# import pandas as pd
+# import numpy as np
+
+# def get_similar_products_knn(df, target_row, n_neighbors=3):
+#     """Find similar products using price and rating"""
+#     try:
+#         df_valid = df.copy()
+#         df_valid['Price'] = pd.to_numeric(df_valid['Price'], errors='coerce')
+#         df_valid['Rating'] = pd.to_numeric(df_valid['Rating'], errors='coerce').fillna(0)
+#         df_valid = df_valid.dropna(subset=['Price'])
+        
+#         if len(df_valid) < 2:
+#             return []
+        
+#         target_price = target_row['Price']
+#         target_rating = target_row.get('Rating', 0)
+#         if pd.isna(target_rating):
+#             target_rating = 0
+        
+#         price_range = target_price * 0.3
+#         similar_mask = (df_valid['Price'] >= target_price - price_range) & \
+#                        (df_valid['Price'] <= target_price + price_range) & \
+#                        (df_valid['Title'] != target_row['Title'])
+        
+#         similar_products = df_valid[similar_mask].head(n_neighbors)
+        
+#         results = []
+#         for _, row in similar_products.iterrows():
+#             results.append(row.to_dict())
+        
+#         return results
+#     except Exception as e:
+#         print(f"KNN Error: {e}")
+#         return []
+
+# def add_better_alternatives(df):
+#     """Find better alternatives (cheaper with similar rating)"""
+#     if df is None or df.empty:
+#         return df
+    
+#     df = df.copy()
+#     df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
+#     df['Rating'] = pd.to_numeric(df['Rating'], errors='coerce').fillna(0)
+#     df = df.dropna(subset=['Price'])
+    
+#     alternatives = []
+    
+#     for _, row in df.iterrows():
+#         target_price = row['Price']
+#         target_rating = row['Rating']
+        
+#         better_mask = (df['Price'] < target_price) & \
+#                      (df['Rating'] >= target_rating - 0.5) & \
+#                      (df['Title'] != row['Title'])
+        
+#         better_options = df[better_mask]
+        
+#         if not better_options.empty:
+#             best = better_options.nsmallest(1, 'Price').iloc[0]
+#             savings = target_price - best['Price']
+            
+#             alternatives.append({
+#                 "title": best['Title'],
+#                 "price": best['Price'],
+#                 "rating": best['Rating'],
+#                 "source": best['Source'],
+#                 "link": best['Link'],
+#                 "savings": int(savings)
+#             })
+#         else:
+#             alternatives.append(None)
+    
+#     df['BetterAlternative'] = alternatives
+#     return df
+
+# def get_top_recommendations(df):
+#     """Get top 3 recommendations"""
+#     if df is None or df.empty:
+#         return []
+    
+#     df = df.copy()
+#     df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
+#     df['Rating'] = pd.to_numeric(df['Rating'], errors='coerce').fillna(0)
+#     df = df.dropna(subset=['Price'])
+    
+#     # Calculate value score
+#     df['ValueScore'] = (df['Rating'] / (df['Price'] / 1000)) * 10
+#     df['ValueScore'] = df['ValueScore'].fillna(0)
+    
+#     top_picks = df.nlargest(3, 'ValueScore')
+    
+#     return top_picks.to_dict(orient='records')
+
+# def add_similar_products(df):
+#     """Add similar products column"""
+#     if df is None or df.empty:
+#         return df
+    
+#     df = df.copy()
+#     similar_list = []
+    
+#     for _, row in df.iterrows():
+#         similar = get_similar_products_knn(df, row, n_neighbors=3)
+#         similar_list.append(similar)
+    
+#     df['SimilarProducts'] = similar_list
+#     return df
